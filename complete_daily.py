@@ -1,7 +1,25 @@
+"""
+Tag notation:
+# -- complete if this kind of day
+@ -- complete if not this kind of day
+
+Supported tags:
+#/@ + mon tues wed thurs fri sat
+@ + weekday, weekend
+@/# teachingday
+#wfh -- working from home
+#holiday -- weekday off of work
+#away -- not at home
+@workday -- equivalent to @weekday #holiday
+@officeday -- equivalent to @weekday #wfh #holiday
+#temp -- temporary
+"""
+
 import argparse
 from datetime import datetime
 import logging
 from pathlib import Path
+import os
 from xml.etree import ElementTree as ET
 
 
@@ -10,20 +28,21 @@ DAILY_OPML_OUTPATH = Path.home() / "workflowy" / "daily.opml"
 DAYS_OF_WEEK = ["mon", "tues", "wed", "thurs", "fri", "sat", "sun"]
 ADDITIONAL_TAGS_TO_COMPLETE_BY_DOW = {
     "mon": ["@weekend"],
-    "tues": ["@weekend", "@teachingday"],
+    "tues": ["@weekend"],
     "wed": ["@weekend"],
-    "thurs": ["@weekend", "@teachingday"],
-    "fri": ["@weekend", "@teachingday"],
-    "sat": ["@weekday", "@teachingday"],
-    "sun": ["@weekday", "@teachingday"],
+    "thurs": ["@weekend"],
+    "fri": ["@weekend"],
+    "sat": ["@weekday"],
+    "sun": ["@weekday"],
 }
 
 
-def main(day, wfh, holiday, away):
+def main(day, wfh, holiday, away, teaching):
     outline = ET.parse(str(WORKFLOWY_OPML_INPATH))
     daily = _reduce_to_daily(outline)
-    _complete(daily, day, wfh, holiday, away)
+    _complete(daily, day, wfh, holiday, away, teaching)
     outline.write(DAILY_OPML_OUTPATH)
+    os.system(f"cat {str(DAILY_OPML_OUTPATH)} | pbcopy")
 
 
 def _reduce_to_daily(outline):
@@ -37,32 +56,43 @@ def _reduce_to_daily(outline):
     return daily
 
 
-def _complete(daily, day, wfh, holiday, away):
-    tags_to_complete = _get_tags_to_complete(day, wfh, holiday, away)
+def _complete(daily, day, wfh, holiday, away, teaching):
+    tags_to_complete = _get_tags_to_complete(day, wfh, holiday, away, teaching)
+    logging.info('Tags to complete: ' + ' OR '.join(tags_to_complete))
 
+    logging.info("Completed items:")
     for item in daily.getiterator():
         text = item.get("text")
         if text is not None:
             if any(tag in text for tag in tags_to_complete):
+                logging.info(f'\t {item.get("text")}')
                 item.attrib["_complete"] = "true"
             elif "_complete" in item.attrib:
                 del item.attrib["_complete"]
 
 
-def _get_tags_to_complete(day, wfh, holiday, away):
+def _get_tags_to_complete(day, wfh, holiday, away, teaching):
     tags_to_complete = [
         f"#{dow}" if dow == day else f"@{dow}" for dow in DAYS_OF_WEEK
     ] + ADDITIONAL_TAGS_TO_COMPLETE_BY_DOW[day]
+
     if wfh:
         tags_to_complete.append("#wfh")
     if holiday:
         tags_to_complete.append("#holiday")
     if away:
         tags_to_complete.append("#away")
+
+    if teaching:
+        tags_to_complete.append("#teaching")
+    else:
+        tags_to_complete.append("@teaching")
+
     if "@weekday" in tags_to_complete and holiday:
-        tags_to_complete += "@workday"
-    if "@weekday" in tags_to_complete and (holiday or wfh):
-        tags_to_complete += "@officeday"
+        tags_to_complete.append("@workday")
+    if "@weekend" in tags_to_complete and (holiday or wfh):
+        tags_to_complete.append("@officeday")
+
     return tags_to_complete
 
 
@@ -87,12 +117,15 @@ def _parse_args() -> dict:
     parser.add_argument("--wfh", action="store_true", help="Working from home ")
     parser.add_argument("--holiday", action="store_true", help="Weekday with no work")
     parser.add_argument("--away", action="store_true", help="Not at home")
+    parser.add_argument("--teaching", action="store_true", help="Teaching")
     args = vars(parser.parse_args())
     logging.info(f"Arguments passed at command line: {args}")
     return args
 
 
 def _get_tomorrow():
+    logging.basicConfig(format="%(message)s")
+    logging.getLogger().setLevel(logging.INFO)
     tomorrow_num = datetime.today().weekday() + 1
     tomorrow = DAYS_OF_WEEK[tomorrow_num]
     return tomorrow
