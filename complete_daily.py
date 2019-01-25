@@ -38,37 +38,8 @@ ADDITIONAL_TAGS_TO_COMPLETE_BY_DOW = {
 
 
 def main(day, wfh, holiday, away, teaching):
-    outline = ET.parse(str(WORKFLOWY_OPML_INPATH))
-    daily = _reduce_to_daily(outline)
-    _complete(daily, day, wfh, holiday, away, teaching)
-    outline.write(DAILY_OPML_OUTPATH)
-    os.system(f"cat {str(DAILY_OPML_OUTPATH)} | pbcopy")
-
-
-def _reduce_to_daily(outline):
-    root = outline.getroot()
-    body = root.find("body")
-    for item in body.findall("outline"):
-        if "daily" in item.get("text").lower():
-            daily = item
-        else:
-            body.remove(item)
-    return daily
-
-
-def _complete(daily, day, wfh, holiday, away, teaching):
     tags_to_complete = _get_tags_to_complete(day, wfh, holiday, away, teaching)
-    logging.info('Tags to complete: ' + ' OR '.join(tags_to_complete))
-
-    logging.info("Completed items:")
-    for item in daily.getiterator():
-        text = item.get("text")
-        if text is not None:
-            if any(tag in text for tag in tags_to_complete):
-                logging.info(f'\t {item.get("text")}')
-                item.attrib["_complete"] = "true"
-            elif "_complete" in item.attrib:
-                del item.attrib["_complete"]
+    print('Tags to complete: ' + ' OR '.join(tags_to_complete))
 
 
 def _get_tags_to_complete(day, wfh, holiday, away, teaching):
