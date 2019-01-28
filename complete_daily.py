@@ -39,7 +39,11 @@ ADDITIONAL_TAGS_TO_COMPLETE_BY_DOW = {
 
 def main(day, wfh, holiday, away, teaching):
     tags_to_complete = _get_tags_to_complete(day, wfh, holiday, away, teaching)
-    print('Tags to complete: ' + ' OR '.join(tags_to_complete))
+    query = ' OR '.join(tags_to_complete)
+    print(f'Query: {query}')
+    cmd = f'echo "{query}" | pbcopy'
+    os.system(cmd)
+    print('Query has been copied to clipboard')
 
 
 def _get_tags_to_complete(day, wfh, holiday, away, teaching):
@@ -59,9 +63,9 @@ def _get_tags_to_complete(day, wfh, holiday, away, teaching):
     else:
         tags_to_complete.append("@teaching")
 
-    if "@weekday" in tags_to_complete and holiday:
+    if "@weekday" in tags_to_complete or holiday:
         tags_to_complete.append("@workday")
-    if "@weekend" in tags_to_complete and (holiday or wfh):
+    if "@weekday" in tags_to_complete or holiday or wfh:
         tags_to_complete.append("@officeday")
 
     return tags_to_complete
@@ -97,7 +101,7 @@ def _parse_args() -> dict:
 def _get_tomorrow():
     logging.basicConfig(format="%(message)s")
     logging.getLogger().setLevel(logging.INFO)
-    tomorrow_num = datetime.today().weekday() + 1
+    tomorrow_num = (datetime.today().weekday() + 1) % 7
     tomorrow = DAYS_OF_WEEK[tomorrow_num]
     return tomorrow
 
