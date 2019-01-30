@@ -7,7 +7,7 @@ Supported tags:
 #/@ + mon tues wed thurs fri sat
 @ + weekday, weekend
 @/# teachingday
-#wfh -- working from home
+@/# wfh -- working from home
 #holiday -- weekday off of work
 #away -- not at home
 @workday -- equivalent to @weekday #holiday
@@ -53,6 +53,8 @@ def _get_tags_to_complete(day, wfh, holiday, away, teaching):
 
     if wfh:
         tags_to_complete.append("#wfh")
+    else:
+        tags_to_complete.append("@wfh")
     if holiday:
         tags_to_complete.append("#holiday")
     if away:
