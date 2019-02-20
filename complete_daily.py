@@ -94,9 +94,28 @@ def _parse_args() -> dict:
     parser.add_argument("--wfh", action="store_true", help="Working from home ")
     parser.add_argument("--holiday", action="store_true", help="Weekday with no work")
     parser.add_argument("--away", action="store_true", help="Not at home")
-    parser.add_argument("--teaching", action="store_true", help="Teaching")
+    parser.add_argument("--teaching",
+                        action="store_true",
+                        help="Override default of teaching on Mon. and Wed., not other days",
+                        default=None,
+                        )
+    parser.add_argument("--no-teaching",
+                        action="store_true",
+                        help="Override default of teaching on Mon. and Wed., not other days",
+                        default=None,
+                        )
     args = vars(parser.parse_args())
-    logging.info(f"Arguments passed at command line: {args}")
+    if args['teaching'] and args['no_teaching']:
+        raise ValueError('Flags --teaching and --no-teaching should not both be set')
+    elif args['teaching'] is None and args['no_teaching'] is None:
+        if args['day'] in ['mon', 'wed']:
+            args['teaching'] = True
+        else:
+            args['teaching'] = False
+    elif args['no_teaching']:
+        args['teaching'] = False
+    del args['no_teaching']
+    logging.info(f"Runtime arguments: {args}")
     return args
 
 
