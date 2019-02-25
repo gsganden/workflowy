@@ -12,6 +12,7 @@ Supported tags:
 #away -- not at home
 @workday -- equivalent to @weekday #holiday
 @officeday -- equivalent to @weekday #wfh #holiday
+#officeday -- equivalent to @weekend @wfh
 #temp -- temporary
 """
 
@@ -69,6 +70,8 @@ def _get_tags_to_complete(day, wfh, holiday, away, teaching):
         tags_to_complete.append("@workday")
     if "@weekday" in tags_to_complete or holiday or wfh:
         tags_to_complete.append("@officeday")
+    if "@weekend" in tags_to_complete or not wfh:
+        tags_to_complete.append("#officeday")
 
     return tags_to_complete
 
