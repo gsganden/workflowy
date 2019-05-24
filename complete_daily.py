@@ -12,7 +12,7 @@ Supported tags:
 #away -- not at home
 @workday -- equivalent to @weekday #holiday
 @officeday -- equivalent to @weekday #wfh #holiday
-#officeday -- equivalent to @weekend @wfh
+#officeday -- opposite of @officeday
 #temp -- temporary
 """
 
@@ -36,6 +36,7 @@ ADDITIONAL_TAGS_TO_COMPLETE_BY_DOW = {
     "sat": ["@weekday"],
     "sun": ["@weekday"],
 }
+DEFAULT_TEACHING_DAYS = ['tues', 'thurs']
 
 
 def main(day, wfh, holiday, away, teaching):
@@ -70,7 +71,7 @@ def _get_tags_to_complete(day, wfh, holiday, away, teaching):
         tags_to_complete.append("@workday")
     if "@weekday" in tags_to_complete or holiday or wfh:
         tags_to_complete.append("@officeday")
-    if "@weekend" in tags_to_complete or not wfh:
+    else:
         tags_to_complete.append("#officeday")
 
     return tags_to_complete
@@ -99,19 +100,19 @@ def _parse_args() -> dict:
     parser.add_argument("--away", action="store_true", help="Not at home")
     parser.add_argument("--teaching",
                         action="store_true",
-                        help="Override default of teaching on Mon. and Wed., not other days",
+                        help="Override default of teaching on Tues. and Thurs., not other days",
                         default=None,
                         )
     parser.add_argument("--no-teaching",
                         action="store_true",
-                        help="Override default of teaching on Mon. and Wed., not other days",
+                        help="Override default of teaching on Tues. and Thurs., not other days",
                         default=None,
                         )
     args = vars(parser.parse_args())
     if args['teaching'] and args['no_teaching']:
         raise ValueError('Flags --teaching and --no-teaching should not both be set')
     elif args['teaching'] is None and args['no_teaching'] is None:
-        if args['day'] in ['mon', 'wed']:
+        if args['day'] in DEFAULT_TEACHING_DAYS:
             args['teaching'] = True
         else:
             args['teaching'] = False
